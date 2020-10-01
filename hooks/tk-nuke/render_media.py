@@ -12,6 +12,8 @@ import sgtk
 import os
 import sys
 import nuke
+import datetime
+import time
 
 from tank_vendor import six
 
@@ -84,6 +86,28 @@ class RenderMedia(HookBaseClass):
         # create group where everything happens
         group = nuke.nodes.Group()
 
+        company_name = "NFA"
+        project_name = ctx.project["name"]
+
+        # getting current time
+        today = datetime.date.today()
+        date_formatted = time.strftime("%d/%m/%Y %H:%M")
+
+        # getting filename
+        current_scene_path = nuke.root().name()
+        current_scene_path = current_scene_path.replace("/", os.path.sep)
+        # get just filename
+        current_scene_name = os.path.basename(current_scene_path)
+        # drop .nk
+        current_scene_name = os.path.splitext(current_scene_name)[0]
+        file_name = current_scene_name.lower()
+
+        user_data = sgtk.util.get_current_user(self.parent.sgtk)
+        if user_data is None:
+            user_name = "Unknown User"
+        else:
+            user_name = user_data.get("name", "Unknown User")
+
         # now operate inside this group
         group.begin()
         try:
@@ -99,15 +123,15 @@ class RenderMedia(HookBaseClass):
             burn = nuke.nodePaste(self._burnin_nk)
             burn.setInput(0, read)
 
-            # set the fonts for all text fields
-            burn.node("top_left_text")["font"].setValue(self._font)
-            burn.node("top_right_text")["font"].setValue(self._font)
-            burn.node("bottom_left_text")["font"].setValue(self._font)
-            burn.node("framecounter")["font"].setValue(self._font)
-            burn.node("slate_info")["font"].setValue(self._font)
+            # set the fonts for all text fields (disabled, uses standard arial in windows)
+            #burn.node("top_left_text")["font"].setValue(self._font)
+            #burn.node("top_right_text")["font"].setValue(self._font)
+            #burn.node("bottom_left_text")["font"].setValue(self._font)
+            #burn.node("framecounter")["font"].setValue(self._font)
+            #burn.node("slate_info")["font"].setValue(self._font)
 
-            # add the logo
-            burn.node("logo")["file"].setValue(self._logo)
+            # add the logo (added logo as roto node in nk file)
+            #burn.node("logo")["file"].setValue(self._logo)
 
             # format the burnins
             version_padding_format = "%%0%dd" % self.__app.get_setting(
@@ -122,32 +146,35 @@ class RenderMedia(HookBaseClass):
             else:
                 version_label = "v%s" % version_str
 
-            burn.node("top_left_text")["message"].setValue(ctx.project["name"])
-            burn.node("top_right_text")["message"].setValue(ctx.entity["name"])
-            burn.node("bottom_left_text")["message"].setValue(version_label)
+            burn.node("top_left_text")["message"].setValue(company_name)
+            burn.node("top_right_text")["message"].setValue(date_formatted)
+            burn.node("bottom_left_text")["message"].setValue(file_name)
+            burn.node("bottom_center_text")["message"].setValue(project_name)
 
-            # and the slate
-            slate_str = "Project: %s\n" % ctx.project["name"]
-            slate_str += "%s: %s\n" % (ctx.entity["type"], ctx.entity["name"])
-            slate_str += "Name: %s\n" % name.capitalize()
-            slate_str += "Version: %s\n" % version_str
 
-            if ctx.task:
-                slate_str += "Task: %s\n" % ctx.task["name"]
-            elif ctx.step:
-                slate_str += "Step: %s\n" % ctx.step["name"]
+            # slate project info
+            burn.node("slate_projectinfo")["message"].setValue(project_name)
 
-            slate_str += "Frames: %s - %s\n" % (first_frame, last_frame)
+            slate_str = "%s\n" % file_name
+            slate_str += "%s - %s\n" % (first_frame, last_frame)
+            slate_str += "%s\n" % date_formatted
+            slate_str += "%s\n" % user_name
+            slate_str += "v%s\n \n" % version_str
+            fps = "[value root.fps]"
+            slate_str += "%s\n" % fps
+            resolution = "[value parent.input.width] x [value parent.input.height]"
+            slate_str += "%s\n" % resolution
+
 
             burn.node("slate_info")["message"].setValue(slate_str)
 
-            # create a scale node
-            scale = self.__create_scale_node(width, height)
-            scale.setInput(0, burn)
+            # create a scale node (disabled because we want the original resolution)
+            #scale = self.__create_scale_node(width, height)
+            #scale.setInput(0, burn)
 
             # Create the output node
             output_node = self.__create_output_node(output_path)
-            output_node.setInput(0, scale)
+            output_node.setInput(0, burn)
         finally:
             group.end()
 
