@@ -270,19 +270,19 @@ class RenderMedia(HookBaseClass):
                 # setting output colorspace
                 colorspace = nuke.root().knob('colorManagement').getValue()
 
-                # If OCIO is set, output - rec709
+                # If OCIO is set, output - sRGB
                 if colorspace:
-                    settings["colorspace"] = "Output - Rec.709"
+                    settings["colorspace"] = "Output - sRGB"
 
                 # If no OCIO is set, detect if ACES is used or nuke_default
                 else:
                     ocio_config = nuke.root().knob('OCIO_config').getValue()
 
                     if ocio_config == 2.0:
-                        settings["colorspace"] = "rec709"
+                        settings["colorspace"] = "sRGB"
 
                     else:
-                        settings["colorspace"] = "Output - Rec.709"
+                        settings["colorspace"] = "Output - sRGB"
 
             else:
                 settings["codec"] = "jpeg"
