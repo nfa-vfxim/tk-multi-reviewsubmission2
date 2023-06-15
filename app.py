@@ -12,10 +12,13 @@
 Sgtk Application for handling Quicktime generation and review submission
 """
 
-import sgtk
-import sgtk.templatekey
-import copy
 import os
+import pathlib
+
+import sgtk.templatekey
+
+from PySide2 import QtCore
+from PySide2.QtWidgets import QMessageBox
 
 
 class MultiReviewSubmissionApp(sgtk.platform.Application):
@@ -31,17 +34,17 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
         provided through it's API.
         """
 
-        app = self.import_module("tk_multi_reviewsubmission")
+        self.reviewsubmission2 = self.import_module("tk_multi_reviewsubmission2")
 
         display_name = self.get_setting("display_name")
 
-        # Only register the command to the engine if the display name is explicitely added to the config.
+        # Only register the command to the engine if the display name is explicitly added to the config.
         # There's cases where someone would want to have this app in his environment without the menu item.
         if display_name:
             menu_caption = "%s..." % display_name
             menu_options = {
-                "short_name": "send_for_review",
-                "description": "Send a version for review using Shotgun Create",
+                "short_name": "create_review",
+                "description": "Render a version for review",
                 # dark themed icon for engines that recognize this format
                 "icons": {
                     "dark": {
@@ -50,63 +53,45 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
                 },
             }
 
-            self.engine.register_command(
-                menu_caption, lambda: app.send_for_review(), menu_options
-            )
+            self.engine.register_command(menu_caption, self.__show_dialog, menu_options)
 
-    @property
-    def context_change_allowed(self):
+    def __show_dialog(self):
         """
-        Specifies that context changes are allowed.
+        Launch the UI for the flipbook settings.
         """
-        return True
-
-    def render_and_submit_version(
-        self,
-        template,
-        fields,
-        first_frame,
-        last_frame,
-        sg_publishes,
-        sg_task,
-        comment,
-        thumbnail_path,
-        progress_cb,
-        color_space=None,
-        *args,
-        **kwargs
-    ):
-        """
-        Main application entry point to be called by other applications / hooks.
-
-        :param template:        The template defining the path where frames should be found.
-        :param fields:          Dictionary of fields to be used to fill out the template with.
-        :param first_frame:     The first frame of the sequence of frames.
-        :param last_frame:      The last frame of the sequence of frames.
-        :param sg_publishes:    A list of shotgun published file objects to link the publish against.
-        :param sg_task:         A Shotgun task object to link against. Can be None.
-        :param comment:         A description to add to the Version in Shotgun.
-        :param thumbnail_path:  The path to a thumbnail to use for the version when the movie isn't
-                                being uploaded to Shotgun (this is set in the config)
-        :param progress_cb:     A callback to report progress with.
-        :param color_space:     The colorspace of the rendered frames
-
-        :returns:               The Version Shotgun entity dictionary that was created.
-        :rtype:                 dict
-        """
-        app = self.import_module("tk_multi_reviewsubmission")
-
-        return app.render_and_submit_version(
-            template,
-            fields,
-            first_frame,
-            last_frame,
-            sg_publishes,
-            sg_task,
-            comment,
-            thumbnail_path,
-            progress_cb,
-            color_space=None,
-            *args,
-            **kwargs
+        main_window = self.execute_hook_method(
+            key="helper_hook",
+            method_name="get_main_window",
+            base_class=None,
         )
+
+        if main_window is not None:
+            work_file_template = self.get_template("work_file_template")
+            review_file_template = self.get_template("review_file_template")
+
+            fields = work_file_template.get_fields(
+                self.execute_hook_method(
+                    key="helper_hook",
+                    method_name="get_file_path",
+                )
+            )
+            self.review_file_path = review_file_template.apply_fields(fields)
+
+            # Check if review file already exists
+            if pathlib.Path(self.review_file_path).is_file():
+                reply = QMessageBox.question(
+                    main_window,
+                    "Override preview",
+                    "A preview for this file already exists, do you want to override it?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No,
+                )
+                if reply == QMessageBox.No:
+                    return
+
+            review_dialog = self.reviewsubmission2.ReviewDialog(self)
+            review_dialog.setParent(main_window, QtCore.Qt.Window)
+            review_dialog.setModal(True)
+            review_dialog.show()
+        else:
+            self.logger.error("Can't find main window.")
