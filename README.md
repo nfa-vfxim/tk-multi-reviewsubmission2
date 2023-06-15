@@ -5,7 +5,7 @@
 
 # tk-multi-reviewsubmission2
 
-Easily create and publish mp4 preview renders (flipbooks/playblasts) from the ShotGrid menu.
+Easily create and publish QuickTime preview renders (flipbooks/playblasts) from the ShotGrid menu.
 
 Supported toolkits: `tk-houdini`, `tk-maya`
 
