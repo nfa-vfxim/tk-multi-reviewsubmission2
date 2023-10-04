@@ -1,7 +1,7 @@
 [![Python 2.6 2.7 3.7](https://img.shields.io/badge/python-2.6%20%7C%202.7%20%7C%203.7-blue.svg)](https://www.python.org/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/maximumfx/tk-multi-reviewsubmission2?include_prereleases)
-[![GitHub issues](https://img.shields.io/github/issues/maximumfx/tk-multi-reviewsubmission2)](https://github.com/maximumfx/tk-multi-reviewsubmission2/issues)
+![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/nfa-vfxim/tk-multi-reviewsubmission2?include_prereleases)
+[![GitHub issues](https://img.shields.io/github/issues/nfa-vfxim/tk-multi-reviewsubmission2)](https://github.com/nfa-vfxim/tk-multi-reviewsubmission2/issues)
 
 # tk-multi-reviewsubmission2
 
