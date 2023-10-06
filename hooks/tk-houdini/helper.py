@@ -1,6 +1,7 @@
 import hou
 
 import sgtk
+from tank_vendor import six
 
 HookBaseClass = sgtk.get_hook_baseclass()
 
@@ -39,5 +40,6 @@ class Helper(HookBaseClass):
         :param str path:    Path to save the workfile to
         """
         if path is not None:
-            hou.hipFile.setName(path)
+            sanitized_path = six.ensure_str(path.replace("\\", "/"))
+            hou.hipFile.setName(sanitized_path)
         hou.hipFile.save()
