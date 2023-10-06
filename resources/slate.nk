@@ -1,9 +1,8 @@
 Group {
- inputs 0
- name ppSlate
+ name rsSlate
  selected true
- xpos -13
- ypos -114
+ xpos -40
+ ypos -106
  addUserKnob {20 controlsTab l Slate}
  addUserKnob {1 project}
  project project_name
@@ -40,56 +39,56 @@ Group {
   barintensity 1
   PAL true
   name ColorBars1
-  xpos -188
-  ypos 2447
+  xpos -150
+  ypos 2750
  }
  Crop {
   box {0 128 256 256}
   name Crop2
-  xpos -188
-  ypos 2677
+  xpos -150
+  ypos 2870
  }
  Constant {
   inputs 0
   channels rgb
   format "256 256 0 0 256 256 1 square_256"
   name Constant1
-  xpos -341
-  ypos 2452
+  xpos -370
+  ypos 2462
  }
  Ramp {
   p0 {0 0}
   p1 {{input.width} 0}
   name Ramp1
-  xpos -341
-  ypos 2602
+  xpos -370
+  ypos 2606
  }
  Posterize {
   Colors 10
   name Posterize1
-  xpos -341
-  ypos 2685
+  xpos -370
+  ypos 2695
  }
  OCIOColorSpace {
   in_colorspace "Output - sRGB"
   out_colorspace scene_linear
   name OCIOColorSpace2
-  xpos -341
-  ypos 2753
+  xpos -370
+  ypos 2750
  }
  Merge2 {
   inputs 2
   name Merge4
-  xpos -341
-  ypos 2882
+  xpos -370
+  ypos 2870
  }
  Shuffle2 {
   fromInput1 {{0} B}
   fromInput2 {{0} B}
   mappings "4 rgba.red 0 0 rgba.red 0 0 rgba.green 0 1 rgba.green 0 1 rgba.blue 0 2 rgba.blue 0 2 white -1 -1 rgba.alpha 0 3"
   name Shuffle1
-  xpos -341
-  ypos 2908
+  xpos -370
+  ypos 2918
  }
  Reformat {
   type "to box"
@@ -98,176 +97,181 @@ Group {
   resize distort
   filter impulse
   name Reformat3
-  xpos -341
-  ypos 2955
+  xpos -370
+  ypos 2966
  }
  BlackOutside {
   name BlackOutside1
-  xpos -341
-  ypos 2981
+  xpos -370
+  ypos 3014
  }
  NoOp {
   name colorbars
-  xpos -341
-  ypos 3007
+  xpos -370
+  ypos 3062
  }
  Transform {
   translate {0 {-(inputResolution.height*2)-height}}
   center {0 {height}}
   name Transform5
-  xpos -341
-  ypos 3109
+  xpos -370
+  ypos 3110
  }
  Dot {
   name Dot7
-  xpos -307
-  ypos 3390
+  xpos -336
+  ypos 3402
  }
  Input {
   inputs 0
   name Input1
-  xpos 1262
-  ypos -3846
+  xpos 1280
+  ypos -3850
  }
  Crop {
   box {0 0 {input.width} {input.height}}
   name Crop1
-  xpos 1262
-  ypos -3046
+  xpos 1280
+  ypos -3082
  }
  Reformat {
   type "to box"
   box_width {{width}}
   name Reformat7
-  xpos 1262
-  ypos -3020
+  xpos 1280
+  ypos -3010
  }
  NoOp {
   name inputResolution
-  xpos 1262
-  ypos -2962
+  xpos 1280
+  ypos -2938
   addUserKnob {20 User}
   addUserKnob {7 resolutionSize}
   resolutionSize {{width*height/2073600}}
  }
  Dot {
   name Dot18
-  xpos 1296
-  ypos -2615
+  xpos 1314
+  ypos -2622
  }
-set N47e35c00 [stack 0]
+set N368a9400 [stack 0]
  Dot {
   name Dot3
-  xpos -1657
-  ypos -2615
+  xpos -1656
+  ypos -2622
  }
  Dot {
   name Dot19
-  xpos -1659
-  ypos -2072
+  xpos -1656
+  ypos -1734
  }
-set N47e35000 [stack 0]
+set N368c2c00 [stack 0]
+ Dot {
+  name Dot25
+  xpos -1216
+  ypos -1734
+ }
  Dot {
   name Dot8
-  xpos -1262
-  ypos -1450
+  xpos -1216
+  ypos -1494
  }
-set N3c935400 [stack 0]
+set N368c3000 [stack 0]
  Dot {
   name Dot10
-  xpos -1262
-  ypos 2508
+  xpos -1216
+  ypos 2514
  }
  Dot {
   name Dot2
-  xpos -1050
-  ypos 2508
+  xpos -996
+  ypos 2514
  }
  Mirror2 {
   flop true
   name Mirror2_1
-  xpos -1084
-  ypos 2722
+  xpos -1030
+  ypos 2678
  }
  Dot {
   name Dot4
-  xpos -1050
-  ypos 2757
+  xpos -996
+  ypos 2754
  }
-set N3c934800 [stack 0]
+set N368bac00 [stack 0]
  Dot {
   name Dot5
-  xpos -940
-  ypos 2757
+  xpos -886
+  ypos 2754
  }
-set N44b35c00 [stack 0]
+set N368bb000 [stack 0]
  Dot {
   name Dot6
-  xpos -818
-  ypos 2757
+  xpos -776
+  ypos 2754
  }
  FrameHold {
   firstFrame {{input.last_frame}}
   name FrameHold2
-  xpos -852
+  xpos -810
   ypos 2815
  }
  Transform {
   translate {0 {-2*input.height}}
   name Transform3
-  xpos -852
-  ypos 2893
+  xpos -810
+  ypos 2966
  }
-push $N44b35c00
+push $N368bb000
  FrameHold {
   firstFrame {{"ceil(input.first_frame + ((input.last_frame - input.first_frame) / 2))"}}
   name FrameHold3
-  xpos -974
-  ypos 2820
+  xpos -920
+  ypos 2815
  }
  Transform {
   translate {0 {-input.height}}
   name Transform2
-  xpos -974
-  ypos 2881
+  xpos -920
+  ypos 2894
  }
-push $N3c934800
+push $N368bac00
  FrameHold {
   firstFrame {{input.first_frame}}
   name FrameHold1
-  xpos -1084
-  ypos 2866
+  xpos -1030
+  ypos 2815
  }
  Merge2 {
   inputs 2
   name Merge1
-  xpos -1084
-  ypos 2959
+  xpos -1030
+  ypos 2894
  }
  Merge2 {
   inputs 2
   name Merge2
-  xpos -1084
-  ypos 3077
+  xpos -1030
+  ypos 2966
  }
  Merge2 {
   inputs 2
   name Merge5
-  xpos -1084
-  ypos 3386
+  xpos -1030
+  ypos 3398
  }
  Transform {
   scale {{input.height/((3*input.height)+colorbars.height)}}
   center {0 {height}}
   name Transform4
-  xpos -1084
+  xpos -1030
   ypos 3470
  }
  Mirror2 {
   flop true
   name Mirror2_2
-  xpos -1084
-  ypos 3605
+  xpos -1030
+  ypos 3614
  }
  Read {
   inputs 0
@@ -275,65 +279,71 @@ push $N3c934800
   file "\[knob logo_path]"
   format "512 512 0 0 512 512 1 square_512"
   origset true
-  version 2
   on_error black
   name Read1
-  xpos -278
-  ypos 895
+  xpos -1470
+  ypos 1056
+ }
+ Premult {
+  name Premult1
+  xpos -1470
+  ypos 1190
+ }
+ OCIOColorSpace {
+  in_colorspace scene_linear
+  out_colorspace "Output - sRGB"
+  name OCIOColorSpace3
+  xpos -1470
+  ypos 1262
  }
  Transform {
   translate {{inputResolution.width/4.8} {inputResolution.height/10}}
-  scale {{".4 * inputResolution.resolutionSize/sqrt(inputResolution.resolutionSize)" x1 0.19245009}}
+  scale {{inputResolution.resolutionSize/sqrt(inputResolution.resolutionSize) x1 0.19245009}}
   name Transform6
-  xpos -278
-  ypos 1074
+  xpos -1470
+  ypos 1334
  }
  Dot {
   name Dot12
-  xpos -244
-  ypos 1413
+  xpos -1436
+  ypos 1410
  }
-push $N47e35000
+push $N368c2c00
  Remove {
   name Remove1
-  xpos -1691
-  ypos -1525
+  xpos -1690
+  ypos -1649
  }
  Dot {
   name Dot13
-  xpos -1657
-  ypos -1485
+  xpos -1656
+  ypos -1494
  }
-set N33b7e000 [stack 0]
+set N368b7000 [stack 0]
  Dot {
   name Dot14
-  xpos -1384
-  ypos -1485
- }
- Dot {
-  name Dot15
-  xpos -1384
-  ypos 410
+  xpos -1986
+  ypos -1494
  }
  Dot {
   name Dot16
-  xpos -848
-  ypos 410
+  xpos -1986
+  ypos 618
  }
-set N10923400 [stack 0]
+set N368b7c00 [stack 0]
  Text2 {
   font_size_toolbar 25
   font_width_toolbar 100
   font_height_toolbar 100
   message "\[knob file]\n\[knob first_frame] - \[knob last_frame] (\[python \[knob last_frame] - \[knob first_frame] + 1])\n\[knob date]\n\[knob artist]\n\[knob task]\n\[knob version]\n\n\[knob fps]\n\[value inputResolution.width] x \[value inputResolution.height]\n\[knob colorspaceIDT]\n\[knob colorspaceODT]\n\n\[knob description]"
-  old_message {{102 105 108 101 95 110 97 109 101 10 49 48 48 49 32 45 32 49 50 49 48 32 40 50 49 48 41 10 100 97 116 101 10 97 114 116 105 115 116 10 116 97 115 107 10 118 101 114 115 105 111 110 10 10 50 53 10 49 57 50 48 32 120 32 49 48 56 48 10 99 111 108 111 114 115 112 97 99 101 32 105 100 116 10 99 111 108 111 114 115 112 97 99 101 32 111 100 116 10 10 97 115 100 101 114 97 115}
+  old_message {{102 105 108 101 95 110 97 109 101 10 49 48 48 49 32 45 32 49 50 48 48 32 40 50 48 48 41 10 100 97 116 101 10 97 114 116 105 115 116 10 116 97 115 107 10 118 101 114 115 105 111 110 10 10 50 53 10 49 57 50 48 32 120 32 49 48 56 48 10 99 111 108 111 114 115 112 97 99 101 32 105 100 116 10 99 111 108 111 114 115 112 97 99 101 32 111 100 116 10 10 100 101 115 99 114 105 112 116 105 111 110}
     }
-  old_expression_markers {{0 8 10 13 17 20 23 25 28 31 33 38 40 43 45 51 54 55 57 60 64 67 69 82 84 97 100 106}
+  old_expression_markers {{0 8 10 13 17 20 23 25 28 31 33 38 40 43 45 51 54 55 57 60 64 67 69 82 84 97 100 110}
     }
   box {{inputResolution.width/4.8} {inputResolution.width/8} {width*.6} {inputResolution.height*.77}}
   transforms {{0 2}
     }
-  font_size_values {{9 25 10 25 11 25 12 25 13 25 14 25 15 25 16 25 17 25 18 25 19 25 20 25 21 25 22 25 23 25 24 25 25 25 26 25 27 25 28 25 29 25 30 25 31 25 32 25 33 25 34 25 35 25 36 25 37 25 38 25 39 25 40 25 41 25 42 25 43 25 44 25 45 25 46 25 47 25 48 25 49 25 50 25 51 25 52 25 53 25 54 25 55 25 56 25 57 25 58 25 59 25 60 25 61 25 62 25 63 25 64 25 65 25 66 25 67 25 68 25 69 25 70 25 71 25 72 25 73 25 74 25 75 25 76 25 77 25 78 25 79 25 80 25 0 25 1 25 2 25 3 25 4 25 5 25 6 25 7 25 8 25 0 26 1 26 2 26 3 26 4 26 5 26 6 26 7 26 8 26 81 25 82 25 83 25 84 25 85 25 86 25 87 25 88 25 89 25 90 25 91 25 92 25 93 25 94 25 95 25 96 25 97 25 98 25 99 25 100 25 101 25 102 25 103 25 104 25 105 25 106 25 81 24 82 24 83 24 84 24 85 24 86 24 87 24 88 24 89 24 90 24 91 24 92 24 93 24 94 24 95 24 96 24 97 24}
+  font_size_values {{9 25 10 25 11 25 12 25 13 25 14 25 15 25 16 25 17 25 18 25 19 25 20 25 21 25 22 25 23 25 24 25 25 25 26 25 27 25 28 25 29 25 30 25 31 25 32 25 33 25 34 25 35 25 36 25 37 25 38 25 39 25 40 25 41 25 42 25 43 25 44 25 45 25 46 25 47 25 48 25 49 25 50 25 51 25 52 25 53 25 54 25 55 25 56 25 57 25 58 25 59 25 60 25 61 25 62 25 63 25 64 25 65 25 66 25 67 25 68 25 69 25 70 25 71 25 72 25 73 25 74 25 75 25 76 25 77 25 78 25 79 25 80 25 0 25 1 25 2 25 3 25 4 25 5 25 6 25 7 25 8 25 0 26 1 26 2 26 3 26 4 26 5 26 6 26 7 26 8 26 81 25 82 25 83 25 84 25 85 25 86 25 87 25 88 25 89 25 90 25 91 25 92 25 93 25 94 25 95 25 96 25 97 25 98 25 99 25 100 25 101 25 102 25 103 25 104 25 105 25 106 25 107 25 108 25 109 25 110 25 81 24 82 24 83 24 84 24 85 24 86 24 87 24 88 24 89 24 90 24 91 24 92 24 93 24 94 24 95 24 96 24 97 24}
     }
   tracking_values {{9 0 24 0 36 0 44 0 45 0 46 0 48 0 53 0 54 0 55 0 56 0 57 0 68 0 70 0}
     }
@@ -354,11 +364,10 @@ set N10923400 [stack 0]
     }
   name Text3
   label parameters
-  selected true
-  xpos -585
-  ypos 651
+  xpos -1910
+  ypos 703
  }
-push $N10923400
+push $N368b7c00
  Text2 {
   font_size_toolbar 25
   font_width_toolbar 100
@@ -396,17 +405,16 @@ push $N10923400
   color 0.85
   name Text4
   label "info left"
-  selected true
-  xpos -735
-  ypos 654
+  xpos -2020
+  ypos 703
  }
  Merge2 {
   inputs 2
   name Merge12
-  xpos -735
-  ypos 697
+  xpos -2020
+  ypos 806
  }
-push $N10923400
+push $N368b7c00
  Text2 {
   font_size_toolbar 50
   font_width_toolbar 100
@@ -434,14 +442,14 @@ push $N10923400
     }
   name Text2
   label project_name
-  xpos -882
-  ypos 660
+  xpos -2130
+  ypos 703
  }
  Merge2 {
   inputs 2
   name Merge11
-  xpos -882
-  ypos 730
+  xpos -2130
+  ypos 926
  }
  Constant {
   inputs 0
@@ -449,16 +457,16 @@ push $N10923400
   color {1 1 1 0}
   format "256 256 0 0 256 256 1 square_256"
   name Constant3
-  xpos -1091
-  ypos -654
+  xpos -1140
+  ypos -538
  }
  Shuffle2 {
   fromInput1 {{0} B}
   fromInput2 {{0} B}
   mappings "4 rgba.red 0 0 rgba.red 0 0 rgba.green 0 1 rgba.green 0 1 rgba.blue 0 2 rgba.blue 0 2 white -1 -1 rgba.alpha 0 3"
   name Shuffle3
-  xpos -1091
-  ypos -580
+  xpos -1140
+  ypos -442
  }
  Reformat {
   type "to box"
@@ -466,67 +474,67 @@ push $N10923400
   box_height {{"floor(inputResolution.height/500) < 2 ? 2 : floor(inputResolution.height/500)"}}
   box_fixed true
   name Reformat5
-  xpos -1091
-  ypos -554
+  xpos -1140
+  ypos -394
  }
  BlackOutside {
   name BlackOutside2
-  xpos -1091
-  ypos -528
+  xpos -1140
+  ypos -346
  }
  Transform {
   translate {0 {inputResolution.height-(inputResolution.height/5)}}
   name Transform7
-  xpos -1091
-  ypos -502
+  xpos -1140
+  ypos -298
  }
-push $N3c935400
+push $N368c3000
  Dot {
   name Dot11
-  xpos -1084
-  ypos -1450
+  xpos -1106
+  ypos -1494
  }
  FrameHold {
   firstFrame {{input.first_frame}}
   name FrameHold4
-  xpos -1118
-  ypos -1377
+  xpos -1140
+  ypos -1385
  }
  SoftClip {
   conversion "preserve hue and brightness"
   softclip_min 0
   softclip_max 3
   name SoftClip1
-  xpos -1118
-  ypos -1299
+  xpos -1140
+  ypos -1306
  }
  Blur {
   size {{50*inputResolution.resolutionSize/sqrt(inputResolution.resolutionSize)}}
   name Blur1
-  xpos -1118
-  ypos -1234
+  xpos -1140
+  ypos -1241
  }
  Unpremult {
   name Unpremult1
-  xpos -1118
-  ypos -860
+  xpos -1140
+  ypos -898
  }
  Multiply {
   value 0.25
   name Multiply1
-  xpos -1118
-  ypos -834
+  xpos -1140
+  ypos -857
  }
  Saturation {
   saturation 0.25
   name Saturation1
-  xpos -1118
-  ypos -794
+  xpos -1140
+  ypos -802
  }
  Crop {
   box {0 0 {inputResolution.width} {inputResolution.height}}
   name Crop3
-  xpos -1118
+  xpos -1140
   ypos -754
  }
  Constant {
@@ -535,16 +543,16 @@ push $N3c935400
   color 0.03
   format "256 256 0 0 256 256 1 square_256"
   name Constant2
-  xpos -1545
-  ypos -1364
+  xpos -1580
+  ypos -1378
  }
  Shuffle2 {
   fromInput1 {{0} B}
   fromInput2 {{0} B}
   mappings "4 rgba.red 0 0 rgba.red 0 0 rgba.green 0 1 rgba.green 0 1 rgba.blue 0 2 rgba.blue 0 2 white -1 -1 rgba.alpha 0 3"
   name Shuffle2
-  xpos -1545
-  ypos -1290
+  xpos -1580
+  ypos -1282
  }
  Reformat {
   type "to box"
@@ -552,102 +560,101 @@ push $N3c935400
   box_height {{inputResolution.height}}
   box_fixed true
   name Reformat4
-  xpos -1545
-  ypos -1267
+  xpos -1580
+  ypos -1234
  }
-push $N33b7e000
+push $N368b7000
  Merge2 {
   inputs 2
   name Merge8
-  xpos -1691
-  ypos -1228
+  xpos -1690
+  ypos -1234
  }
  Merge2 {
   inputs 2
   name Merge6
-  xpos -1691
-  ypos -693
+  xpos -1690
+  ypos -754
  }
  OCIOColorSpace {
   in_colorspace scene_linear
   out_colorspace "Output - sRGB"
   name OCIOColorSpace4
-  xpos -1691
-  ypos -456
+  xpos -1690
+  ypos -514
  }
  Merge2 {
   inputs 2
   name Merge7
-  xpos -1691
-  ypos -224
+  xpos -1690
+  ypos -298
  }
  Merge2 {
   inputs 2
   name Merge10
-  xpos -1691
-  ypos 919
+  xpos -1690
+  ypos 926
  }
  Merge2 {
   inputs 2
   name Merge9
-  xpos -1691
-  ypos 1409
+  xpos -1690
+  ypos 1406
  }
-set N44b16800 [stack 0]
  OCIOColorSpace {
   in_colorspace "Output - sRGB"
   out_colorspace scene_linear
   name OCIOColorSpace5
-  xpos -1691
-  ypos 1518
+  xpos -1690
+  ypos 1526
  }
  Merge2 {
   inputs 2
   name Merge3
-  xpos -1691
-  ypos 4230
+  xpos -1690
+  ypos 3614
  }
  Dot {
   name Dot17
-  xpos -1657
-  ypos 5111
+  xpos -1656
+  ypos 5106
  }
-push $N47e35c00
+push $N368a9400
  OCIOColorSpace {
   in_colorspace scene_linear
   out_colorspace "Output - sRGB"
   name OCIOColorSpace1
-  xpos 1262
-  ypos -2046
+  xpos 1280
+  ypos -2050
  }
  Dot {
   name Dot9
-  xpos 1296
-  ypos -1905
+  xpos 1314
+  ypos -1902
  }
-set N3e7cb000 [stack 0]
+set N368b2c00 [stack 0]
  Dot {
   name Dot20
-  xpos 1441
-  ypos -1905
+  xpos 1424
+  ypos -1902
  }
  Remove {
   name Remove2
-  xpos 1407
-  ypos -1791
+  xpos 1390
+  ypos -1841
  }
  Dot {
   name Dot21
-  xpos 1441
-  ypos -1751
+  xpos 1424
+  ypos -1758
  }
-set N428e5400 [stack 0]
+set N368b3800 [stack 0]
  Text2 {
   font_size_toolbar 25
   font_width_toolbar 100
   font_height_toolbar 100
   message "\[knob first_frame] - \[frame] - \[knob last_frame]"
-  old_message {{49 48 48 49 32 45 32 52 32 45 32 49 50 49 48}
+  old_message {{49 48 48 49 32 45 32 52 32 45 32 49 50 48 48}
     }
   old_expression_markers {{0 3 7 7 11 14}
     }
@@ -655,7 +662,7 @@ set N428e5400 [stack 0]
   xjustify right
   transforms {{0 2}
     }
-  font_size_values {{0 25 1 25 2 25 3 25 4 25 5 25 6 25 7 25 8 25 9 25 10 25 11 25 12 25 13 25 14 25}
+  font_size_values {{0 25 1 25 2 25 3 25 4 25 5 25 6 25 7 25 7 25 8 25 9 25 10 25 11 25 12 25 13 25 14 25}
     }
   cursor_position 48
   font {{ Arial : Regular : arial.ttf : 0 }}
@@ -675,11 +682,15 @@ set N428e5400 [stack 0]
   background_border_y {{parent.Text1.background_border_y}}
   name Text8
   label "bottom right"
-  selected true
-  xpos 2020
-  ypos -1652
+  xpos 1830
+  ypos -1649
  }
-push $N428e5400
+ Dot {
+  name Dot23
+  xpos 1864
+  ypos -1278
+ }
+push $N368b3800
  Text2 {
   font_size_toolbar 25
   font_width_toolbar 100
@@ -711,16 +722,16 @@ push $N428e5400
   background_border_y {{parent.Text1.background_border_y}}
   name Text7
   label "bottom left"
-  xpos 1846
-  ypos -1663
+  xpos 1720
+  ypos -1649
  }
  Merge2 {
   inputs 2
   name Merge18
-  xpos 1846
-  ypos -1420
+  xpos 1720
+  ypos -1282
  }
-push $N428e5400
+push $N368b3800
  Text2 {
   font_size_toolbar 25
   font_width_toolbar 100
@@ -753,10 +764,15 @@ push $N428e5400
   background_border_y {{parent.Text1.background_border_y}}
   name Text6
   label "top right"
-  xpos 1672
-  ypos -1666
+  xpos 1610
+  ypos -1649
  }
-push $N428e5400
+ Dot {
+  name Dot1
+  xpos 1644
+  ypos -1374
+ }
+push $N368b3800
  Text2 {
   font_size_toolbar 25
   font_width_toolbar 100
@@ -789,15 +805,15 @@ push $N428e5400
   background_border_y {{parent.Text1.background_border_y}}
   name Text5
   label "top middle"
-  xpos 1524
-  ypos -1663
+  xpos 1500
+  ypos -1649
  }
  Dot {
   name Dot22
-  xpos 1558
-  ypos -1549
+  xpos 1534
+  ypos -1470
  }
-push $N428e5400
+push $N368b3800
  Text2 {
   font_size_toolbar 25
   font_width_toolbar 100
@@ -829,59 +845,56 @@ push $N428e5400
   background_border_y {{5*inputResolution.resolutionSize/sqrt(inputResolution.resolutionSize)}}
   name Text1
   label "top left"
-  xpos 1407
-  ypos -1658
+  xpos 1390
+  ypos -1649
  }
  Merge2 {
   inputs 2
   name Merge15
-  xpos 1407
-  ypos -1467
+  xpos 1390
+  ypos -1474
  }
  Merge2 {
   inputs 2
   name Merge16
-  xpos 1407
-  ypos -1387
+  xpos 1390
+  ypos -1378
  }
  Merge2 {
   inputs 2
   name Merge17
-  xpos 1407
-  ypos -1171
+  xpos 1390
+  ypos -1282
  }
-push $N3e7cb000
+ Dot {
+  name Dot24
+  xpos 1424
+  ypos -990
+ }
+push $N368b2c00
  Merge2 {
   inputs 2
   name Merge14
-  xpos 1262
-  ypos -990
+  xpos 1280
+  ypos -994
  }
  OCIOColorSpace {
   in_colorspace "Output - sRGB"
   out_colorspace scene_linear
   name OCIOColorSpace6
-  xpos 1262
-  ypos -482
+  xpos 1280
+  ypos -490
  }
  Switch {
   inputs 2
   which {{"frame < inputResolution.first_frame"}}
   name Switch2
-  xpos 1262
-  ypos 5107
+  xpos 1280
+  ypos 5102
  }
  Output {
   name Output1
-  xpos 1262
-  ypos 5871
- }
-push $N44b16800
- Viewer {
-  frame_range 100-100
-  fps 25
-  name Viewer1
-  xpos 1262
-  ypos 5133
+  xpos 1280
+  ypos 5870
  }
 end_group
