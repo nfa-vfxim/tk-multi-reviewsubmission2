@@ -48,13 +48,34 @@ output_node = None
 version_padding = 3
 _burnin_nk = os.path.join(app_path, "resources", "slate.nk")
 
+
+def __get_srgb_colorspace():
+    """Get the correct sRGB namespace"""
+    # setting output colorspace
+    colorspace = nuke.root().knob("colorManagement").getValue()
+
+    # If OCIO is set, Output - sRGB
+    if colorspace:
+        return "Output - sRGB"
+
+    # If no OCIO is set, detect if ACES is used or nuke_default
+    else:
+        ocio_config = nuke.root().knob("OCIO_config").getValue()
+
+        if ocio_config == 2.0:
+            return "sRGB"
+
+        else:
+            return "Output - sRGB"
+
+
 # create group
 group = nuke.nodes.Group()
 
 # general metadata
 today = datetime.date.today()
 date_formatted = time.strftime("%d/%m/%Y %H:%M")
-color_space = "Output - sRGB"
+colorspace = __get_srgb_colorspace()
 
 # operate in group
 group.begin()
@@ -94,21 +115,7 @@ def __get_quicktime_settings():
         settings["mov64_fps"] = fps
 
         # setting output colorspace
-        colorspace = nuke.root().knob("colorManagement").getValue()
-
-        # If OCIO is set, Output - sRGB
-        if colorspace:
-            settings["colorspace"] = "Output - sRGB"
-
-        # If no OCIO is set, detect if ACES is used or nuke_default
-        else:
-            ocio_config = nuke.root().knob("OCIO_config").getValue()
-
-            if ocio_config == 2.0:
-                settings["colorspace"] = "sRGB"
-
-            else:
-                settings["colorspace"] = "Output - sRGB"
+        settings["colorspace"] = colorspace
 
     else:
         settings["codec"] = "jpeg"
@@ -124,8 +131,8 @@ try:
     read["on_error"].setValue("checkerboard")
     read["first"].setValue(first_frame)
     read["last"].setValue(last_frame)
-    if color_space:
-        read["colorspace"].setValue(color_space)
+    if colorspace:
+        read["colorspace"].setValue(colorspace)
 
     # now create the slate/burnin node
     burn = nuke.nodePaste(_burnin_nk)
