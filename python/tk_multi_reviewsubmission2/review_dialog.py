@@ -25,7 +25,7 @@ import pathlib
 import tempfile
 import time
 
-from PySide2 import QtGui
+from PySide2 import QtGui, QtCore
 from PySide2 import QtWidgets
 from PySide2.QtWidgets import QMessageBox
 
@@ -42,6 +42,7 @@ class ReviewDialog(QtWidgets.QDialog):
         self.sg = self.current_engine.shotgun
         self.current_context = self.current_engine.context
         self.entity = self.current_context.entity
+        self.task = self.current_context.task
 
         # Get task and project info
         self.fields = {
@@ -50,11 +51,33 @@ class ReviewDialog(QtWidgets.QDialog):
             "fps": self.app.get_setting("fps_field"),
         }
 
-        cut_data = self.sg.find_one(
+        entity_data = self.sg.find_one(
             self.entity["type"],
             [["id", "is", self.entity["id"]]],
-            [self.fields.get("cut_in"), self.fields.get("cut_out")],
+            [self.fields.get("cut_in"), self.fields.get("cut_out"), "tasks"],
         )
+        if self.task is None:
+            entity_tasks = self.sg.find(
+                "Task",
+                [
+                    [
+                        "project.Project.name",
+                        "is",
+                        self.current_context.project["name"],
+                    ],
+                    [f"entity.{self.entity['type']}.id", "is", self.entity["id"]],
+                    ["step.Step.id", "is", self.current_context.step["id"]],
+                ],
+                ["*"],
+            )
+            entity_tasks = [task["id"] for task in entity_tasks]
+            tasks = [
+                task for task in entity_data.get("tasks") if task["id"] in entity_tasks
+            ]
+            if len(tasks) == 1:
+                self.task = tasks[0]
+            else:
+                self.tasks = tasks
 
         project_name = self.current_context.project["name"]
         fps = self.sg.find_one(
@@ -62,8 +85,8 @@ class ReviewDialog(QtWidgets.QDialog):
         ).get(self.fields.get("fps"))
 
         self.cut_data = {
-            "cut_in": cut_data.get(self.fields.get("cut_in")),
-            "cut_out": cut_data.get(self.fields.get("cut_out")),
+            "cut_in": entity_data.get(self.fields.get("cut_in")),
+            "cut_out": entity_data.get(self.fields.get("cut_out")),
             "fps": float(fps),
         }
 
@@ -218,6 +241,27 @@ class ReviewDialog(QtWidgets.QDialog):
         self.publish_to_shotgrid_checkbox = QtWidgets.QCheckBox(
             "Publish to ShotGrid", self
         )
+        # publish to ShotGrid
+        self.open_in_create_checkbox = QtWidgets.QCheckBox(
+            "Open in ShotGrid Create", self
+        )
+
+        if self.task is None:
+            self.task_selection = QtWidgets.QComboBox()
+            for task in self.tasks:
+                self.task_selection.addItem(task.get("name"), task)
+            self.task_selection.setEnabled(False)
+
+            self.publish_to_shotgrid_checkbox.stateChanged.connect(
+                lambda state: self.task_selection.setEnabled(
+                    state == QtCore.Qt.Checked or self.validate_create()
+                )
+            )
+            self.open_in_create_checkbox.stateChanged.connect(
+                lambda state: self.task_selection.setEnabled(
+                    state == QtCore.Qt.Checked or self.validate_shotgrid()
+                )
+            )
 
         # copy to path widget
         self.copy_path_button = QtWidgets.QPushButton("Copy Path to Clipboard")
@@ -226,6 +270,9 @@ class ReviewDialog(QtWidgets.QDialog):
         self.options_group = QtWidgets.QGroupBox("Render options")
         group_layout.addWidget(self.save_new_version_checkbox)
         group_layout.addWidget(self.publish_to_shotgrid_checkbox)
+        group_layout.addWidget(self.open_in_create_checkbox)
+        if self.task is None:
+            group_layout.addWidget(self.task_selection)
         group_layout.addWidget(self.copy_path_button)
         self.options_group.setLayout(group_layout)
 
@@ -263,6 +310,7 @@ class ReviewDialog(QtWidgets.QDialog):
 
     def start_render(self):
         publish_to_shotgrid = self.validate_shotgrid()
+        open_in_create = self.validate_create()
         save_new_version = self.validate_save_new_version()
 
         def run(progress):
@@ -299,7 +347,7 @@ class ReviewDialog(QtWidgets.QDialog):
                 key="render_media_hook",
                 method_name="render",
                 base_class=None,
-                **input_settings
+                **input_settings,
             )
 
             # Slate
@@ -321,38 +369,67 @@ class ReviewDialog(QtWidgets.QDialog):
                 )
             except Exception as err:
                 progress.finish()
-                QMessageBox.question(
+                QMessageBox.critical(
                     self,
                     "Error",
                     "Something went wrong while rendering the slate:\n\n{}".format(err),
-                    QMessageBox.Ok,
-                    QMessageBox.Ok
                 )
                 return False
 
             # Check if created slate
             if not pathlib.Path(self.review_file_path).is_file():
-                self.logger.error('Something went wrong while creating the slate!')
+                self.logger.error("Something went wrong while creating the slate!")
                 progress.finish()
-                QMessageBox.question(
+                QMessageBox.critical(
                     self,
                     "Error",
                     "Something went wrong while creating the slate! Please check if the app is configured properly and "
                     "try again.",
-                    QMessageBox.Ok,
-                    QMessageBox.Ok
                 )
                 return False
 
-            # Publish
-            if publish_to_shotgrid:
-                progress.next_progress("Creating Shotgun Version and uploading movie")
-                SubmitVersion(
+            if publish_to_shotgrid or open_in_create:
+                task = (
+                    self.validate_task_selection() if self.task is None else self.task
+                )
+
+                version = SubmitVersion(
                     self.app,
+                    task,
                     self.review_file_path,
                     self.validate_frame_range(),
                     self.validate_description(),
-                ).submit_version()
+                )
+
+                # Publish
+                if publish_to_shotgrid:
+                    progress.next_progress(
+                        "Creating Shotgun Version and uploading movie"
+                    )
+                    version.submit_version()
+
+                # Open in create
+                if open_in_create:
+                    if version.has_create():
+                        progress.next_progress("Opening review in ShotGrid Create")
+                        try:
+                            version.open_in_create()
+                        except RuntimeError as e:
+                            progress.finish()
+                            QMessageBox.critical(
+                                self,
+                                "Error",
+                                e.__str__(),
+                            )
+                            return False
+                    else:
+                        progress.finish()
+                        QMessageBox.critical(
+                            self,
+                            "Cannot open in Create",
+                            "ShotGrid Create is not installed!",
+                        )
+                        return False
 
             # Save
             if save_new_version:
@@ -369,23 +446,26 @@ class ReviewDialog(QtWidgets.QDialog):
             progress.finish()
             self.logger.info("Review successful")
 
+            return True
+
         # Start progress bar
         progress = self.app.execute_hook_method(
             key="progress_hook",
             method_name="create_progress",
             name="{}ing".format(self.app.get_setting("display_name")),
             long_name="Creating a review",
-            total_items=4 + int(publish_to_shotgrid) + int(save_new_version),
+            total_items=4
+            + int(publish_to_shotgrid)
+            + int(open_in_create)
+            + int(save_new_version),
         ).start(run)
 
         if progress:
             # Show completed dialog
-            QMessageBox.question(
+            QMessageBox.information(
                 self,
                 "Completed",
                 "Rendering preview completed.",
-                QMessageBox.Ok,
-                QMessageBox.Ok
             )
 
     def copy_path_to_clipboard(self):
@@ -401,12 +481,20 @@ class ReviewDialog(QtWidgets.QDialog):
         # validating the publish to ShotGrid checkbox
         return self.publish_to_shotgrid_checkbox.isChecked()
 
+    def validate_create(self):
+        # validating the Open in create checkbox
+        return self.open_in_create_checkbox.isChecked()
+
+    def validate_task_selection(self):
+        # validating the Open in create checkbox
+        return self.task_selection.currentData()
+
     def validate_save_new_version(self):
         # save_new_version validation
         # check if the save new version option is ticked
         return self.save_new_version_checkbox.isChecked()
 
-    def validate_frame_range(self):
+    def validate_frame_range(self) -> tuple[int, int]:
         """Format the frame range"""
 
         cut_in = self.__get_frame_range()[0]

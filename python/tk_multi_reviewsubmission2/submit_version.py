@@ -27,11 +27,19 @@ from PySide2 import QtCore
 
 
 class SubmitVersion(object):
-    def __init__(self, app, file_path, frame_range, description):
+    def __init__(
+        self, app, task, file_path: str, frame_range: tuple[int, int], description: str
+    ):
         self.app = app
+        self.task = task
         self.file = file_path
         self.frame_range = frame_range
         self.description = description
+
+        desktopclient_framework = self.app.frameworks["tk-framework-desktopclient"]
+        self.__create_client_module = desktopclient_framework.import_module(
+            "create_client"
+        )
 
     def submit_version(self):
         """Submit file to ShotGrid"""
@@ -46,12 +54,23 @@ class SubmitVersion(object):
         ctx = self.app.context
 
         # Update data object for submission
-        data = {"code": name, "sg_status_list": "rev", "entity": ctx.entity, "sg_task": ctx.task,
-                "sg_first_frame": self.frame_range[0], "sg_last_frame": self.frame_range[1],
-                "sg_frames_have_slate": False, "created_by": user, "user": user, "description": self.description,
-                "sg_movie_has_slate": True, "project": ctx.project,
-                "frame_count": self.frame_range[1] - self.frame_range[0] + 1,
-                "frame_range": "%s-%s" % (self.frame_range[0], self.frame_range[1]), "sg_path_to_movie": self.file}
+        data = {
+            "code": name,
+            "sg_status_list": "rev",
+            "entity": ctx.entity,
+            "sg_task": self.task,
+            "sg_first_frame": self.frame_range[0],
+            "sg_last_frame": self.frame_range[1],
+            "sg_frames_have_slate": False,
+            "created_by": user,
+            "user": user,
+            "description": self.description,
+            "sg_movie_has_slate": True,
+            "project": ctx.project,
+            "frame_count": self.frame_range[1] - self.frame_range[0] + 1,
+            "frame_range": "%s-%s" % (self.frame_range[0], self.frame_range[1]),
+            "sg_path_to_movie": self.file,
+        }
 
         # Calculate frame count and range and update accordingly
 
@@ -70,6 +89,56 @@ class SubmitVersion(object):
             self.app.logger.debug(
                 "An error occurred while creating a new version: {}".format(err)
             )
+
+    def has_create(self):
+        """
+        Checks if it's possible to submit versions given the current context/environment.
+
+        :returns:               Flag telling if the hook can submit a version.
+        :rtype:                 bool
+        """
+
+        if not self.__create_client_module.is_create_installed():
+            self.__create_client_module.open_shotgun_create_download_page(
+                self.app.sgtk.shotgun
+            )
+
+            return False
+
+        return True
+
+    def open_in_create(self):
+        """
+        Create a version in Shotgun for a given path and linked to the specified publishes.
+        Because of the asynchronous nature of this hook. It doesn't returns any Version Shotgun entity dictionary.
+        """
+
+        # Starts Shotgun Create in the right context if not already running.
+        ok = self.__create_client_module.ensure_create_server_is_running(
+            self.app.sgtk.shotgun
+        )
+
+        if not ok:
+            raise RuntimeError("Unable to connect to Shotgun Create.")
+
+        client = self.__create_client_module.CreateClient(self.app.sgtk.shotgun)
+
+        version_draft_args = dict()
+        version_draft_args["task_id"] = self.task["id"]
+        version_draft_args["path"] = self.file.replace(os.sep, "/")
+        version_draft_args["version_data"] = dict()
+
+        # Currently not added
+        # if sg_publishes:
+        #     version_draft_args["version_data"]["published_files"] = sg_publishes
+
+        if self.description:
+            version_draft_args["version_data"]["description"] = self.description
+
+        client.call_server_method("sgc_open_version_draft", version_draft_args)
+
+        # Because of the asynchronous nature of this hook. It doesn't returns any Version Shotgun entity dictionary.
+        return None
 
     def __upload_version(self, version):
         """Upload files to ShotGrid"""

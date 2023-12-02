@@ -37,7 +37,7 @@ class Progress(HookBaseClass):
             open_interrupt_dialog=True,
         ) as operation:
             self.operation = operation
-            callback(self)
+            return callback(self)
 
     def __update(self):
         """
@@ -46,5 +46,9 @@ class Progress(HookBaseClass):
         if self.operation is not None:
             self.operation.updateLongProgress(
                 self.current_item / self.total_items,
-                "{} ({}/{})".format(self.current_description, self.current_item + 1, self.total_items + 1)
+                "{} ({}/{})".format(
+                    self.current_description,
+                    self.current_item + 1,
+                    self.total_items + 1,
+                ),
             )

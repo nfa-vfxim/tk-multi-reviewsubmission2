@@ -75,7 +75,7 @@ class Progress(HookBaseClass):
         :returns:               If progress succeeded
         :rtype:                 bool
         """
-        callback(self)
+        return callback(self)
 
     def __update(self):
         """

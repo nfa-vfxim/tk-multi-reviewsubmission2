@@ -25,7 +25,7 @@ class Progress(HookBaseClass):
             isInterruptable=True,
             maxValue=self.total_items,
         )
-        callback(self)
+        return callback(self)
 
     def __update(self):
         """

@@ -79,3 +79,6 @@ configuration:
         default_value: "{self}/render_media.py:{self}/{engine_name}/render_media.py"
 
 supported_engines: [tk-houdini, tk-maya]
+
+frameworks:
+    - {"name": "tk-framework-desktopclient", "version": "v0.x.x"}
