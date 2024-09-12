@@ -58,16 +58,9 @@ def __get_srgb_colorspace():
     if colorspace:
         return "Output - sRGB"
 
-    # If no OCIO is set, detect if ACES is used or nuke_default
+    # If no OCIO is set, use sRGB
     else:
-        ocio_config = nuke.root().knob("OCIO_config").getValue()
-
-        if ocio_config == 2.0:
-            return "sRGB"
-
-        else:
-            return "Output - sRGB"
-
+        return "sRGB"
 
 # create group
 group = nuke.nodes.Group()
