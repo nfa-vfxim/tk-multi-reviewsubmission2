@@ -201,6 +201,15 @@ class ReviewDialog(QtWidgets.QDialog):
             group_layout.addWidget(self.output_to_mplay)
             group_layout.addWidget(self.beauty_pass_only)
         elif self.current_engine.name == "tk-maya":
+            import maya
+
+            self.resolution_x_line.setValue(
+                maya.cmds.getAttr("defaultResolution.width")
+            )
+            self.resolution_y_line.setValue(
+                maya.cmds.getAttr("defaultResolution.height")
+            )
+
             self.use_antialiasing = QtWidgets.QCheckBox("Anti-aliasing", self)
             self.show_ornaments = QtWidgets.QCheckBox("Show ornaments", self)
             self.show_ornaments.setChecked(True)
@@ -299,7 +308,7 @@ class ReviewDialog(QtWidgets.QDialog):
                 key="render_media_hook",
                 method_name="render",
                 base_class=None,
-                **input_settings
+                **input_settings,
             )
 
             # Slate
@@ -326,13 +335,13 @@ class ReviewDialog(QtWidgets.QDialog):
                     "Error",
                     "Something went wrong while rendering the slate:\n\n{}".format(err),
                     QMessageBox.Ok,
-                    QMessageBox.Ok
+                    QMessageBox.Ok,
                 )
                 return False
 
             # Check if created slate
             if not pathlib.Path(self.review_file_path).is_file():
-                self.logger.error('Something went wrong while creating the slate!')
+                self.logger.error("Something went wrong while creating the slate!")
                 progress.finish()
                 QMessageBox.question(
                     self,
@@ -340,7 +349,7 @@ class ReviewDialog(QtWidgets.QDialog):
                     "Something went wrong while creating the slate! Please check if the app is configured properly and "
                     "try again.",
                     QMessageBox.Ok,
-                    QMessageBox.Ok
+                    QMessageBox.Ok,
                 )
                 return False
 
@@ -385,7 +394,7 @@ class ReviewDialog(QtWidgets.QDialog):
                 "Completed",
                 "Rendering preview completed.",
                 QMessageBox.Ok,
-                QMessageBox.Ok
+                QMessageBox.Ok,
             )
 
     def copy_path_to_clipboard(self):
