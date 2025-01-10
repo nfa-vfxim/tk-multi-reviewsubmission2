@@ -108,7 +108,7 @@ def __get_quicktime_settings():
         settings["mov64_codec"] = 14
         settings["mov64_quality_max"] = "3"
         settings["mov64_fps"] = fps
-        if sound_path is not None and os.path.isfile(sound_path):
+        if os.path.isfile(sound_path):
             settings["mov64_audiofile"] = sound_path
             settings["mov64_audio_offset"] = sound_offset - 1000
         settings["mov64_units"] = "Frames"
