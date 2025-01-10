@@ -38,6 +38,8 @@ class RenderMedia(HookBaseClass):
             description,
             version,
             engine_settings,
+            sound_path = None,
+            sound_offset = None,
     ):
         """
         Render the media
@@ -65,6 +67,8 @@ class RenderMedia(HookBaseClass):
             description,
             version,
             engine_settings,
+            sound_path,
+            sound_offset,
         )
 
         old_motion_blur = maya.mel.eval('getAttr "hardwareRenderingGlobals.motionBlurEnable";')
@@ -131,6 +135,8 @@ class RenderMedia(HookBaseClass):
             description,
             version,
             engine_settings,
+            sound_path,
+            sound_offset,
     ):
         """
         Build the playblast command arguments. This implementation grab the playblast arguments from Maya.
@@ -148,6 +154,7 @@ class RenderMedia(HookBaseClass):
         :param str description:         Description to use in the slate for the output movie
         :param int version:             Version number to use for the output movie slate and burn-in
         :param dict engine_settings:    Engine specific settings to use for rendering
+        :param 
 
         :returns:               Playblast arguments
         :rtype:                 dict

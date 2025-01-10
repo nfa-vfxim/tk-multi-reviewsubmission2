@@ -212,6 +212,16 @@ class ReviewDialog(QtWidgets.QDialog):
                 maya.cmds.getAttr("defaultResolution.height")
             )
 
+
+            audio_nodes = maya.cmds.ls(type="audio")
+            self.audio_filename = None
+            for audio_node in audio_nodes:
+                if audio_node is None:  # Skip if the audio_node is None
+                    continue
+                self.audio_filename = maya.cmds.getAttr(f"{audio_node}.filename")
+                self.audio_offset = maya.cmds.getAttr(f"{audio_node}.offset")
+
+
             self.use_antialiasing = QtWidgets.QCheckBox("Anti-aliasing", self)
             self.show_ornaments = QtWidgets.QCheckBox("Show ornaments", self)
             self.show_ornaments.setChecked(True)
@@ -291,6 +301,8 @@ class ReviewDialog(QtWidgets.QDialog):
             input_settings["resolution"] = self.validate_resolution()
             input_settings["description"] = self.validate_description()
             input_settings["version"] = self.file_fields.get("version")
+            input_settings["sound_path"] = self.audio_filename
+            input_settings["sound_offset"] = self.audio_offset
 
             if self.current_engine.name == "tk-houdini":
                 engine_settings["mplay"] = self.validate_mplay()

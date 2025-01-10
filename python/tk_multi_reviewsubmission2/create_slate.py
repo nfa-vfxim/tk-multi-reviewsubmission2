@@ -71,6 +71,9 @@ class CreateSlate(object):
         if sgtk.util.is_windows():
             logo_path = logo_path.replace(os.sep, "/")
 
+        sound_path = settings["sound_path"]
+        sound_offset = settings["sound_offset"]
+
         # ensure output path exists
         self.app.ensure_folder_exists(os.path.dirname(os.path.abspath(outputFile)))
 
@@ -102,6 +105,8 @@ class CreateSlate(object):
                 description,
                 str(fps),
                 logo_path,
+                str(sound_path),
+                str(sound_offset),
             ],
             shell=True,
             stdout=subprocess.PIPE,

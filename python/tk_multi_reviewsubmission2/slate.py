@@ -42,6 +42,8 @@ task_name = sys.argv[12]
 description = sys.argv[13]
 fps = float(sys.argv[14])
 logo_path = sys.argv[15]
+sound_path = sys.argv[16]
+sound_offset = int(float(sys.argv[17]))
 
 output_node = None
 
@@ -106,6 +108,10 @@ def __get_quicktime_settings():
         settings["mov64_codec"] = 14
         settings["mov64_quality_max"] = "3"
         settings["mov64_fps"] = fps
+        if os.path.isfile(sound_path):
+            settings["mov64_audiofile"] = sound_path
+            settings["mov64_audio_offset"] = sound_offset - 1000
+        settings["mov64_units"] = "Frames"
 
         # setting output colorspace
         settings["colorspace"] = colorspace
