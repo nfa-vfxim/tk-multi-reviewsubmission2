@@ -43,8 +43,7 @@ description = sys.argv[13]
 fps = float(sys.argv[14])
 logo_path = sys.argv[15]
 sound_path = sys.argv[16]
-sound_offset = int(float(sys.argv[17]))
-
+sound_offset = int(float(sys.argv[17])) if sys.argv[17] != "None" else None
 output_node = None
 
 version_padding = 3
@@ -110,7 +109,7 @@ def __get_quicktime_settings():
         settings["mov64_fps"] = fps
         if os.path.isfile(sound_path):
             settings["mov64_audiofile"] = sound_path
-            settings["mov64_audio_offset"] = sound_offset - 1000
+            settings["mov64_audio_offset"] = sound_offset - (first_frame - 1)
         settings["mov64_units"] = "Frames"
 
         # setting output colorspace
