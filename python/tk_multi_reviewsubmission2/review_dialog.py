@@ -196,6 +196,8 @@ class ReviewDialog(QtWidgets.QDialog):
         # --- OPTIONS ---
         #
         # Houdini specific settings
+        self.audio_filename = None
+        self.audio_offset = None
         if self.current_engine.name == "tk-houdini":
             self.output_to_mplay = QtWidgets.QCheckBox("MPlay Output", self)
             self.output_to_mplay.setChecked(True)
@@ -214,8 +216,6 @@ class ReviewDialog(QtWidgets.QDialog):
 
 
             audio_nodes = maya.cmds.ls(type="audio")
-            self.audio_filename = None
-            self.audio_offset = None
             for audio_node in audio_nodes:
                 if audio_node is None:  # Skip if the audio_node is None
                     continue

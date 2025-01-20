@@ -35,6 +35,8 @@ class RenderMedia(HookBaseClass):
         description,
         version,
         engine_settings,
+        sound_path = None,
+        sound_offset = None,
     ):
         """
         Render the media
