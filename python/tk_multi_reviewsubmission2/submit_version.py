@@ -74,7 +74,7 @@ class SubmitVersion(object):
                 tk = sgtk.sgtk_from_path(hou.hipFile.path())
                 fx_id = hou.contextOption("fx_id")
                 if fx_id != "No fx task":
-                    new_context = tk.context_from_entity("Task", fx_id)
+                    new_context = tk.context_from_entity("Task", int(fx_id))
                     data = {
                         "code": name,
                         "sg_status_list": "rev",
