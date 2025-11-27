@@ -154,7 +154,6 @@ class SubmitVersion(object):
 
         directory.mkdir(parents=True, exist_ok=True)
 
-
         destination.write_bytes(source.read_bytes())
 
 
