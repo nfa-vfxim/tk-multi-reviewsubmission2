@@ -69,29 +69,30 @@ class SubmitVersion(object):
         }
 
         if self.app.engine.name == "tk-houdini":
-            if self.app.engine.context.step.get("name") == "Research and Development":
-                import hou
-                tk = sgtk.sgtk_from_path(hou.hipFile.path())
-                fx_id = hou.contextOption("fx_id")
-                if fx_id != "No fx task":
-                    new_context = tk.context_from_entity("Task", int(fx_id))
-                    data = {
-                        "code": name,
-                        "sg_status_list": "rev",
-                        "entity": new_context.entity,
-                        "sg_task": new_context.task,
-                        "sg_first_frame": self.frame_range[0],
-                        "sg_last_frame": self.frame_range[1],
-                        "sg_frames_have_slate": False,
-                        "created_by": user,
-                        "user": user,
-                        "description": self.description,
-                        "sg_movie_has_slate": True,
-                        "project": new_context.project,
-                        "frame_count": self.frame_range[1] - self.frame_range[0] + 1,
-                        "frame_range": "%s-%s" % (self.frame_range[0], self.frame_range[1]),
-                        "sg_path_to_movie": self.file,
-                    }
+            import hou
+            tk = sgtk.sgtk_from_path(hou.hipFile.path())
+            fx_id = hou.contextOption("fx_id")
+            if not fx_id:
+                return
+            if fx_id != "No fx task":
+                new_context = tk.context_from_entity("Task", int(fx_id))
+                data = {
+                    "code": name,
+                    "sg_status_list": "rev",
+                    "entity": new_context.entity,
+                    "sg_task": new_context.task,
+                    "sg_first_frame": self.frame_range[0],
+                    "sg_last_frame": self.frame_range[1],
+                    "sg_frames_have_slate": False,
+                    "created_by": user,
+                    "user": user,
+                    "description": self.description,
+                    "sg_movie_has_slate": True,
+                    "project": new_context.project,
+                    "frame_count": self.frame_range[1] - self.frame_range[0] + 1,
+                    "frame_range": "%s-%s" % (self.frame_range[0], self.frame_range[1]),
+                    "sg_path_to_movie": self.file,
+                }
 
         # Calculate frame count and range and update accordingly
 
