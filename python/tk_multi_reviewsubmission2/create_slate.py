@@ -45,6 +45,17 @@ class CreateSlate(object):
         self.slatePath = os.path.join(__location__, "slate.py")
 
     def run_slate(self, inputFile, outputFile, projectFile, settings):
+        """Build and run the slate command, blocking until it's done."""
+        command, env = self.build_command(inputFile, outputFile, projectFile, settings)
+        self.execute(command, env)
+
+    def build_command(self, inputFile, outputFile, projectFile, settings):
+        """
+        Collect everything needed to render the slate. Must run on the main thread
+        (it reads settings and the context from Toolkit).
+
+        :returns:   Tuple of (command list, environment dict)
+        """
         # setup environment
         custom_env = os.environ.copy()
 
@@ -84,34 +95,43 @@ class CreateSlate(object):
             settings["resolution"][1],
         )
 
+        command = [
+            self.nuke_path,
+            "-t",
+            self.slatePath,
+            inputFile,
+            outputFile,
+            company_name,
+            project_name,
+            file_name,
+            str(first_frame),
+            str(last_frame),
+            app_path,
+            str(version),
+            resolution,
+            user_name,
+            task_name,
+            description,
+            str(fps),
+            logo_path,
+            str(sound_path),
+            str(sound_offset),
+        ]
+        return command, custom_env
+
+    def execute(self, command, env):
+        """
+        Run the slate command. Safe to call from a worker thread.
+
+        :raises Exception:  When Nuke reports an error
+        """
         # call subprocess of nuke and convert
         process = subprocess.Popen(
-            [
-                self.nuke_path,
-                "-t",
-                self.slatePath,
-                inputFile,
-                outputFile,
-                company_name,
-                project_name,
-                file_name,
-                str(first_frame),
-                str(last_frame),
-                app_path,
-                str(version),
-                resolution,
-                user_name,
-                task_name,
-                description,
-                str(fps),
-                logo_path,
-                str(sound_path),
-                str(sound_offset),
-            ],
+            command,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            env=custom_env,
+            env=env,
         )
 
         stdout, stderr = process.communicate()

@@ -38,7 +38,13 @@ class SubmitVersion(object):
         self.description = description
 
     def submit_version(self):
-        """Submit file to ShotGrid"""
+        """
+        Submit file to ShotGrid
+
+        :returns:   True if the Version was created and the movie uploaded
+        :rtype:     bool
+        """
+        success = False
         # Bind user
         user = sgtk.util.get_current_user(self.app.sgtk)
 
@@ -104,16 +110,18 @@ class SubmitVersion(object):
             self.app.logger.debug("Created version in ShotGrid: %s" % str(data))
 
             # upload the movie files to ShotGrid
-            self.__upload_version(version)
+            success = self.__upload_version(version)
             self.app.logger.debug("Uploaded version in ShotGrid")
         except Exception as err:
-            self.app.logger.debug(
+            self.app.logger.error(
                 "An error occurred while creating a new version: {}".format(err)
             )
 
         if self.app.engine.name == "tk-houdini":
             if self.app.engine.context.step.get("name") == "Research and Development":
                 self.xpoject_shotsynq_fileadd()
+
+        return success
 
     def xpoject_shotsynq_fileadd(self):
         """shotsynq add-on. delete after x project"""
@@ -172,6 +180,8 @@ class SubmitVersion(object):
         if thread.get_errors():
             for e in thread.get_errors():
                 self.app.logger.error(e)
+            return False
+        return True
 
 
 class UploaderThread(QtCore.QThread):

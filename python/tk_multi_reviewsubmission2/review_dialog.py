@@ -22,6 +22,7 @@
 
 import os
 import pathlib
+import shutil
 import tempfile
 
 try:
@@ -32,6 +33,7 @@ except ModuleNotFoundError:
     from PySide6.QtWidgets import QMessageBox
 
 from .create_slate import CreateSlate
+from .preview_dialog import MovieJob, PreviewDialog, SavePromptDialog
 from .submit_version import SubmitVersion
 
 
@@ -83,6 +85,7 @@ class ReviewDialog(QtWidgets.QDialog):
 
         # Create a temporary directory for the JPG files
         temp_dir = tempfile.mkdtemp()
+        self.temp_dir = temp_dir
         self.render_file_path = os.path.join(temp_dir, "temporary.####.jpg")
         if self.current_engine.name == "tk-houdini":
             self.render_file_path = os.path.join(temp_dir, "temporary.$F4.jpg")
@@ -232,22 +235,11 @@ class ReviewDialog(QtWidgets.QDialog):
         self.use_motionblur = QtWidgets.QCheckBox("Motion Blur", self)
         group_layout.addWidget(self.use_motionblur)
 
-        # save new version widget
-        self.save_new_version_checkbox = QtWidgets.QCheckBox("Save New Version", self)
-        self.save_new_version_checkbox.setChecked(True)
-
-        # publish to ShotGrid
-        self.publish_to_shotgrid_checkbox = QtWidgets.QCheckBox(
-            "Publish to ShotGrid", self
-        )
-
         # copy to path widget
         self.copy_path_button = QtWidgets.QPushButton("Copy Path to Clipboard")
 
         # options group
         self.options_group = QtWidgets.QGroupBox("Render options")
-        group_layout.addWidget(self.save_new_version_checkbox)
-        group_layout.addWidget(self.publish_to_shotgrid_checkbox)
         group_layout.addWidget(self.copy_path_button)
         self.options_group.setLayout(group_layout)
 
@@ -284,8 +276,7 @@ class ReviewDialog(QtWidgets.QDialog):
         self.close()
 
     def start_render(self):
-        publish_to_shotgrid = self.validate_shotgrid()
-        save_new_version = self.validate_save_new_version()
+        result = {"success": False, "input_settings": None}
 
         def run(progress):
             self.close_window()
@@ -326,91 +317,227 @@ class ReviewDialog(QtWidgets.QDialog):
                 **input_settings,
             )
 
-            # Slate
-            progress.next_progress("Rendering slate")
-
-            project_file = os.path.basename(
-                self.app.execute_hook_method(
-                    key="helper_hook",
-                    method_name="get_file_path",
-                )
-            ).lower()
-            try:
-                slate = CreateSlate(self.app)
-                slate.run_slate(
-                    self.nuke_render_file_path,
-                    self.review_file_path,
-                    project_file,
-                    input_settings,
-                )
-            except Exception as err:
-                progress.finish()
-                QMessageBox.question(
-                    self,
-                    "Error",
-                    "Something went wrong while rendering the slate:\n\n{}".format(err),
-                    QMessageBox.Ok,
-                    QMessageBox.Ok,
-                )
-                return False
-
-            # Check if created slate
-            if not pathlib.Path(self.review_file_path).is_file():
-                self.logger.error("Something went wrong while creating the slate!")
-                progress.finish()
-                QMessageBox.question(
-                    self,
-                    "Error",
-                    "Something went wrong while creating the slate! Please check if the app is configured properly and "
-                    "try again.",
-                    QMessageBox.Ok,
-                    QMessageBox.Ok,
-                )
-                return False
-
-            # Publish
-            if publish_to_shotgrid:
-                progress.next_progress("Creating Shotgun Version and uploading movie")
-                SubmitVersion(
-                    self.app,
-                    self.review_file_path,
-                    self.validate_frame_range(),
-                    self.validate_description(),
-                ).submit_version()
-
-            # Save
-            if save_new_version:
-                progress.next_progress("Saving file")
-                new_file = self.file_fields
-                new_file["version"] += 1
-                self.app.execute_hook_method(
-                    key="helper_hook",
-                    method_name="save_file",
-                    path=self.work_file_template.apply_fields(new_file),
-                )
-
-            # Close window
             progress.finish()
-            self.logger.info("Review successful")
+            result["success"] = True
+            result["input_settings"] = input_settings
+            return True
 
-        # Start progress bar
-        progress = self.app.execute_hook_method(
+        # Render the playblast frames
+        self.app.execute_hook_method(
             key="progress_hook",
             method_name="create_progress",
             name="{}ing".format(self.app.get_setting("display_name")),
             long_name="Creating a review",
-            total_items=4 + int(publish_to_shotgrid) + int(save_new_version),
+            total_items=2,
         ).start(run)
 
-        if progress:
-            # Show completed dialog
-            QMessageBox.question(
-                self,
-                "Completed",
-                "Rendering preview completed.",
-                QMessageBox.Ok,
+        if not result["success"]:
+            self.__cleanup_temp_files()
+            return
+
+        input_settings = result["input_settings"]
+        parent = self.parentWidget() or self
+
+        # Show the playblast and ask if it should be submitted. Nothing else
+        # happens (no slate, no save) unless the artist submits.
+        try:
+            preview = PreviewDialog(
+                frames_folder=self.temp_dir,
+                movie_path=self.review_file_path,
+                fps=input_settings["fps"],
+                sound_path=self.__resolve_sound_path(),
+                sound_offset=self.audio_offset or 0,
+                parent=parent,
+            )
+            publish_to_shotgrid = preview.ask()
+            preview.deleteLater()
+
+            self.logger.debug("Submit to ShotGrid: %s" % publish_to_shotgrid)
+            if not publish_to_shotgrid:
+                self.__notify("Not submitted")
+                return
+
+            # Render the movie with slate (reads the JPG frames, so before cleanup)
+            movie_job = self.__start_movie_job(input_settings)
+            self.__wait_for_movie_job(movie_job)
+        finally:
+            self.__cleanup_temp_files()
+
+        if not movie_job.success:
+            self.logger.error(
+                "Something went wrong while creating the slate: %s" % movie_job.error
+            )
+            QMessageBox.warning(
+                parent,
+                "Error",
+                "Something went wrong while rendering the slate:\n\n{}\n\n"
+                "Nothing was submitted. Please check if the app is configured "
+                "properly and try again.".format(movie_job.error),
                 QMessageBox.Ok,
             )
+            return
+
+        # Submit
+        submitted = {"success": False}
+
+        def submit(progress):
+            progress.set_progress(0, "Creating ShotGrid Version and uploading movie")
+            submitted["success"] = SubmitVersion(
+                self.app,
+                self.review_file_path,
+                input_settings["frame_range"],
+                input_settings["description"],
+            ).submit_version()
+            progress.finish()
+
+        self.app.execute_hook_method(
+            key="progress_hook",
+            method_name="create_progress",
+            name="{}ing".format(self.app.get_setting("display_name")),
+            long_name="Submitting to ShotGrid",
+            total_items=1,
+        ).start(submit)
+
+        if not submitted["success"]:
+            QMessageBox.warning(
+                parent,
+                "Error",
+                "Submitting to ShotGrid failed. Check the ShotGrid log for details."
+                "\n\nThe movie is saved to:\n%s" % self.review_file_path,
+                QMessageBox.Ok,
+            )
+            return
+
+        # Only after a successful submit: ask to save a new version
+        new_file_fields = dict(self.file_fields)
+        new_file_fields["version"] += 1
+        new_work_file = self.work_file_template.apply_fields(new_file_fields)
+        current_work_file = self.app.execute_hook_method(
+            key="helper_hook",
+            method_name="get_file_path",
+        )
+        save_new_version = SavePromptDialog(
+            current_work_file, new_work_file, parent=parent
+        ).ask()
+
+        if save_new_version:
+
+            def save(progress):
+                progress.set_progress(0, "Saving file")
+                self.app.execute_hook_method(
+                    key="helper_hook",
+                    method_name="save_file",
+                    path=new_work_file,
+                )
+                progress.finish()
+
+            self.app.execute_hook_method(
+                key="progress_hook",
+                method_name="create_progress",
+                name="{}ing".format(self.app.get_setting("display_name")),
+                long_name="Saving file",
+                total_items=1,
+            ).start(save)
+
+        self.logger.info("Review successful")
+        message = "Submitted to ShotGrid"
+        if save_new_version:
+            message += ", saved as v%03d" % new_file_fields["version"]
+        self.__notify(message)
+
+    def __start_movie_job(self, input_settings):
+        """Start rendering the movie with slate on a worker thread."""
+        project_file = os.path.basename(
+            self.app.execute_hook_method(
+                key="helper_hook",
+                method_name="get_file_path",
+            )
+        ).lower()
+
+        try:
+            slate = CreateSlate(self.app)
+            # collecting the settings has to happen on the main thread
+            command, env = slate.build_command(
+                self.nuke_render_file_path,
+                self.review_file_path,
+                project_file,
+                input_settings,
+            )
+        except Exception as err:
+            self.logger.exception("Could not prepare the slate")
+            job = MovieJob(lambda: None, self.review_file_path)
+            job.success = False
+            job.error = str(err)
+            return job
+
+        job = MovieJob(
+            lambda: slate.execute(command, env), self.review_file_path, parent=self
+        )
+        job.start()
+        return job
+
+    def __wait_for_movie_job(self, movie_job):
+        """Block (with a progress bar) until the movie with slate is rendered."""
+        if movie_job is None or not movie_job.is_running():
+            return
+
+        def wait(progress):
+            progress.set_progress(0, "Rendering the movie with slate")
+            while not movie_job.wait(0.05):
+                QtWidgets.QApplication.processEvents()
+            progress.finish()
+
+        self.app.execute_hook_method(
+            key="progress_hook",
+            method_name="create_progress",
+            name="{}ing".format(self.app.get_setting("display_name")),
+            long_name="Rendering movie",
+            total_items=1,
+        ).start(wait)
+
+    def __notify(self, message):
+        """Show a short, non-blocking message in the host application."""
+        self.logger.info(message)
+        try:
+            if self.current_engine.name == "tk-maya":
+                import maya.cmds as cmds
+
+                cmds.inViewMessage(
+                    assistMessage="Playblast: <hl>%s</hl>" % message,
+                    position="topCenter",
+                    fade=True,
+                    fadeStayTime=3000,
+                )
+            elif self.current_engine.name == "tk-houdini":
+                import hou
+
+                hou.ui.setStatusMessage("Flipbook: %s" % message)
+        except Exception:
+            pass
+
+    def __resolve_sound_path(self):
+        """Absolute path of the scene's sound file, or None."""
+        path = self.audio_filename
+        if not path:
+            return None
+        if os.path.isfile(path):
+            return path
+        if self.current_engine.name == "tk-maya":
+            try:
+                import maya.cmds as cmds
+
+                # relative to the Maya project (workspace)
+                expanded = cmds.workspace(expandName=path)
+                if expanded and os.path.isfile(expanded):
+                    return expanded
+            except Exception:
+                pass
+        # let the preview report the missing file
+        return path
+
+    def __cleanup_temp_files(self):
+        """Remove the temporary JPG frames of the playblast."""
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def copy_path_to_clipboard(self):
         """
@@ -420,15 +547,6 @@ class ReviewDialog(QtWidgets.QDialog):
         self.logger.debug("Copying path to clipboard: %s" % self.review_file_path)
         QtGui.QGuiApplication.clipboard().setText(self.review_file_path)
         return
-
-    def validate_shotgrid(self):
-        # validating the publish to ShotGrid checkbox
-        return self.publish_to_shotgrid_checkbox.isChecked()
-
-    def validate_save_new_version(self):
-        # save_new_version validation
-        # check if the save new version option is ticked
-        return self.save_new_version_checkbox.isChecked()
 
     def validate_frame_range(self):
         """Format the frame range"""
