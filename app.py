@@ -73,12 +73,42 @@ class MultiReviewSubmissionApp(sgtk.platform.Application):
             work_file_template = self.get_template("work_file_template")
             review_file_template = self.get_template("review_file_template")
 
-            fields = work_file_template.get_fields(
-                self.execute_hook_method(
-                    key="helper_hook",
-                    method_name="get_file_path",
-                )
+            file_path = self.execute_hook_method(
+                key="helper_hook",
+                method_name="get_file_path",
             )
+
+            # The work file has to follow the work file template, otherwise we
+            # can't work out where the review file should go. This happens when
+            # a scene was never saved, or saved outside of ShotGrid (e.g. Maya's
+            # own File > Save As). Tell the user how to fix it instead of
+            # raising a TankError traceback.
+            fields = None
+            if file_path:
+                try:
+                    fields = work_file_template.get_fields(file_path)
+                except sgtk.TankError as error:
+                    self.logger.debug(
+                        "Work file does not match template: %s" % error
+                    )
+
+            if fields is None:
+                if file_path:
+                    problem = (
+                        "The file <b>%s</b> was not saved through ShotGrid, "
+                        "so its name does not match the pipeline."
+                    ) % os.path.basename(file_path)
+                else:
+                    problem = "This scene has not been saved yet."
+
+                QMessageBox.warning(
+                    main_window,
+                    "Can't create review",
+                    problem + "<br><br>Please save the scene through "
+                    "<b>ShotGrid &gt; File Save...</b> first and try again.",
+                )
+                return
+
             self.review_file_path = review_file_template.apply_fields(fields)
 
             # Check if review file already exists
