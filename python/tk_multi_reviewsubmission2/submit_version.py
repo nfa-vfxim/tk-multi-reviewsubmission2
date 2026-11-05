@@ -38,7 +38,13 @@ class SubmitVersion(object):
         self.description = description
 
     def submit_version(self):
-        """Submit file to ShotGrid"""
+        """
+        Submit file to ShotGrid
+
+        :returns:   True if the Version was created and the movie uploaded
+        :rtype:     bool
+        """
+        success = False
         # Bind user
         user = sgtk.util.get_current_user(self.app.sgtk)
 
@@ -73,7 +79,8 @@ class SubmitVersion(object):
             tk = sgtk.sgtk_from_path(hou.hipFile.path())
             fx_id = hou.contextOption("fx_id")
             if not fx_id:
-                return
+                self.app.logger.warning("No fx_id context option set, no Version created")
+                return False
             if fx_id != "No fx task":
                 new_context = tk.context_from_entity("Task", int(fx_id))
                 data = {
@@ -105,12 +112,14 @@ class SubmitVersion(object):
             self.app.logger.debug("Created version in ShotGrid: %s" % str(data))
 
             # upload the movie files to ShotGrid
-            self.__upload_version(version)
+            success = self.__upload_version(version)
             self.app.logger.debug("Uploaded version in ShotGrid")
         except Exception as err:
-            self.app.logger.debug(
+            self.app.logger.error(
                 "An error occurred while creating a new version: {}".format(err)
             )
+
+        return success
 
     def __upload_version(self, version):
         """Upload files to ShotGrid"""
@@ -126,6 +135,8 @@ class SubmitVersion(object):
         if thread.get_errors():
             for e in thread.get_errors():
                 self.app.logger.error(e)
+            return False
+        return True
 
 
 class UploaderThread(QtCore.QThread):
