@@ -75,29 +75,31 @@ class SubmitVersion(object):
         }
 
         if self.app.engine.name == "tk-houdini":
-            if self.app.engine.context.step.get("name") == "Research and Development":
-                import hou
-                tk = sgtk.sgtk_from_path(hou.hipFile.path())
-                fx_id = hou.contextOption("fx_id")
-                if fx_id != "No fx task":
-                    new_context = tk.context_from_entity("Task", int(fx_id))
-                    data = {
-                        "code": name,
-                        "sg_status_list": "rev",
-                        "entity": new_context.entity,
-                        "sg_task": new_context.task,
-                        "sg_first_frame": self.frame_range[0],
-                        "sg_last_frame": self.frame_range[1],
-                        "sg_frames_have_slate": False,
-                        "created_by": user,
-                        "user": user,
-                        "description": self.description,
-                        "sg_movie_has_slate": True,
-                        "project": new_context.project,
-                        "frame_count": self.frame_range[1] - self.frame_range[0] + 1,
-                        "frame_range": "%s-%s" % (self.frame_range[0], self.frame_range[1]),
-                        "sg_path_to_movie": self.file,
-                    }
+            import hou
+            tk = sgtk.sgtk_from_path(hou.hipFile.path())
+            fx_id = hou.contextOption("fx_id")
+            if not fx_id:
+                self.app.logger.warning("No fx_id context option set, no Version created")
+                return False
+            if fx_id != "No fx task":
+                new_context = tk.context_from_entity("Task", int(fx_id))
+                data = {
+                    "code": name,
+                    "sg_status_list": "rev",
+                    "entity": new_context.entity,
+                    "sg_task": new_context.task,
+                    "sg_first_frame": self.frame_range[0],
+                    "sg_last_frame": self.frame_range[1],
+                    "sg_frames_have_slate": False,
+                    "created_by": user,
+                    "user": user,
+                    "description": self.description,
+                    "sg_movie_has_slate": True,
+                    "project": new_context.project,
+                    "frame_count": self.frame_range[1] - self.frame_range[0] + 1,
+                    "frame_range": "%s-%s" % (self.frame_range[0], self.frame_range[1]),
+                    "sg_path_to_movie": self.file,
+                }
 
         # Calculate frame count and range and update accordingly
 
@@ -117,54 +119,7 @@ class SubmitVersion(object):
                 "An error occurred while creating a new version: {}".format(err)
             )
 
-        if self.app.engine.name == "tk-houdini":
-            if self.app.engine.context.step.get("name") == "Research and Development":
-                self.xpoject_shotsynq_fileadd()
-
         return success
-
-    def xpoject_shotsynq_fileadd(self):
-        """shotsynq add-on. delete after x project"""
-        import hou
-        from pathlib import Path
-        filepath = Path(hou.hipFile.path())
-        job_name = filepath.parts
-        fx_tasks = ["fx_boek", "cfx_cloudboy", "fx_crowdsim", "cfx_draak", "fx_hagel", "cfx_hippogrief", "fx_lasso", "fx_storm", "cfx_schaap"]
-        jobname_folders = {
-            "fx_boek" : "Boekje",
-            "cfx_cloudboy" : "Cloudboy FX",
-            "fx_crowdsim" : "Crowdsim",
-            "cfx_draak" : "Draak CFX",
-            "fx_hagel" : "Hagel",
-            "cfx_hippogrief" : "Hippogrief CFX",
-            "fx_lasso" : "Lasso",
-            "fx_storm" : "Wolken",
-            "cfx_schaap" : "Schaap CFX"}
-
-        jobname_file = {
-            "fx_boek" : "boekje",
-            "cfx_cloudboy" : "cloudboyfx",
-            "fx_crowdsim" : "crowdsim",
-            "cfx_draak" : "draakcfx",
-            "fx_hagel" : "hagel",
-            "cfx_hippogrief" : "hippogrieffx",
-            "fx_lasso" : "lassofx",
-            "fx_storm" : "wolken",
-            "cfx_schaap" : "schaap"}
-
-        if not job_name[5] in fx_tasks:
-            return
-        directory = Path(r"\\nfa-vfxim-storage.stud.ahk.nl\4ejaar\projects\xproject_cloudboy\02_source\shotsynx\fx playblasts") / hou.contextOption("sequence") / jobname_folders[str(job_name[5])]
-        new_filename = f"fx_{hou.contextOption('sequence')}_{hou.contextOption('shot')}_{jobname_file[str(job_name[5])]}"
-        
-        source = Path(self.file)
-        destination = directory / f"{new_filename}{source.suffix}"
-
-        directory.mkdir(parents=True, exist_ok=True)
-
-        destination.write_bytes(source.read_bytes())
-
-
 
     def __upload_version(self, version):
         """Upload files to ShotGrid"""
