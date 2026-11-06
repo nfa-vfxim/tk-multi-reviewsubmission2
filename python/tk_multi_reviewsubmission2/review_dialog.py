@@ -622,29 +622,43 @@ class ReviewDialog(QtWidgets.QDialog):
         return str(self.description.text())
 
     def __get_frame_range(self):
-        """Get the configured frame range integers."""
+        """
+        Get the frame range as [start, end] integers.
 
-        frame_range = []
+        Each value is taken on its own: ShotGrid cut in / cut out first, then
+        the scene's own frame range, then the defaults (1001-1240). A shot with
+        only a cut in (or only a cut out) on ShotGrid no longer breaks the dialog.
+        """
 
-        frame_start = self.cut_data.get("cut_in")
-        frame_end = self.cut_data.get("cut_out")
+        def to_int(value):
+            try:
+                return int(round(float(value)))
+            except (TypeError, ValueError):
+                return None
+
+        frame_start = to_int(self.cut_data.get("cut_in"))
+        frame_end = to_int(self.cut_data.get("cut_out"))
+
+        if frame_start is None or frame_end is None:
+            try:
+                scene = self.app.execute_hook_method(
+                    key="helper_hook",
+                    method_name="get_cut_data",
+                ) or {}
+            except Exception as error:
+                self.app.logger.debug("Could not read the scene frame range: %s" % error)
+                scene = {}
+            if frame_start is None:
+                frame_start = to_int(scene.get("cut_in"))
+            if frame_end is None:
+                frame_end = to_int(scene.get("cut_out"))
 
         if frame_start is None:
-            cut_data = self.app.execute_hook_method(
-                key="helper_hook",
-                method_name="get_cut_data",
-            )
-            if cut_data:
-                frame_range.append(int(cut_data.get("cut_in")))
-                frame_range.append(int(cut_data.get("cut_out")))
-            else:
-                frame_range.append(1001)
-                frame_range.append(1240)
-        else:
-            frame_range.append(int(frame_start))
-            frame_range.append(int(frame_end))
+            frame_start = 1001
+        if frame_end is None or frame_end < frame_start:
+            frame_end = max(frame_start, 1240) if frame_end is None else frame_start
 
-        return frame_range
+        return [frame_start, frame_end]
 
     def __get_default_fps(self):
         """Get the configured fps integer."""
