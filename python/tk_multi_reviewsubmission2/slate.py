@@ -21,7 +21,9 @@
 # SOFTWARE.
 
 import datetime
+import json
 import os
+import struct
 import sys
 import time
 
@@ -86,6 +88,8 @@ def __create_output_node(path):
     for knob_name in wn_settings.keys():
         knob_value = wn_settings.get(knob_name)
         if knob_name != "file_type":
+            if node.knob(knob_name) is None:
+                continue  # knob not in this Nuke version (e.g. mov64_write_timecode)
             node.knob(knob_name).setValue(knob_value)
 
     root_node = nuke.root()
@@ -111,6 +115,8 @@ def __get_quicktime_settings():
             settings["mov64_audiofile"] = sound_path
             settings["mov64_audio_offset"] = sound_offset - (first_frame - 1)
         settings["mov64_units"] = "Frames"
+        # NFA: start timecode = frame number, so other tools know where the movie starts
+        settings["mov64_write_timecode"] = True
 
         # setting output colorspace
         settings["colorspace"] = colorspace
@@ -161,9 +167,27 @@ try:
     burn.knob("colorspaceODT").setValue("Output - sRGB")
     burn.knob("logo_path").setValue(logo_path)
 
+    # NFA: timecode that counts frames (slate = first_frame - 1), written into the movie
+    last_node = burn
+    try:
+        base = int(round(fps))
+        start = first_frame - 1
+        timecode = nuke.nodes.AddTimeCode(inputs=[burn])
+        timecode["startcode"].setValue(
+            "%02d:%02d:%02d:%02d"
+            % (start // (3600 * base), (start // (60 * base)) % 60, (start // base) % 60, start % base)
+        )
+        timecode["metafps"].setValue(False)
+        timecode["fps"].setValue(base)
+        timecode["useFrame"].setValue(True)
+        timecode["frame"].setValue(start)
+        last_node = timecode
+    except Exception as error:
+        print("NFA metadata: no timecode (%s)" % error)
+
     # Create the output node
     output_node = __create_output_node(output_path)
-    output_node.setInput(0, burn)
+    output_node.setInput(0, last_node)
 
 finally:
     group.end()
@@ -173,6 +197,50 @@ if output_node:
     nuke.executeMultiple(
         [output_node], ([first_frame - 1, last_frame, 1],), [nuke.views()[0]]
     )
+
+
+
+def __write_nfa_metadata(path):
+    """NFA: frame range and playblast settings inside the movie file, for tools that have to
+    line the movie up with its plate (NFA VFX Edit in Resolve). Nuke cannot write custom
+    QuickTime keys, so this is a 'free' atom at the end of the file: every player skips it,
+    readers look for the NFAMETA1 marker. Never lets the review submission fail."""
+    try:
+        width, height = [int(x) for x in resolution.lower().split("x")]
+    except Exception:
+        width = height = 0
+    data = {
+        "first_frame": first_frame,
+        "last_frame": last_frame,
+        "slate_frames": 1,
+        "fps": fps,
+        "width": width,
+        "height": height,
+        "version": version,
+        "project": project_name,
+        "task": task_name,
+        "artist": user_name,
+        "source": file_name,
+        "camera": os.environ.get("NFA_REVIEW_CAMERA", ""),
+        "created": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    for key in ("overscan", "film_fit", "focal_length"):
+        value = os.environ.get("NFA_REVIEW_%s" % key.upper())
+        if value not in (None, ""):
+            try:
+                data[key] = float(value)
+            except ValueError:
+                data[key] = value
+    payload = b"NFAMETA1" + json.dumps(data, sort_keys=True).encode("utf-8")
+    with open(path, "ab") as handle:
+        handle.write(struct.pack(">I4s", 8 + len(payload), b"free") + payload)
+
+
+if output_node and os.path.isfile(output_path):
+    try:
+        __write_nfa_metadata(output_path)
+    except Exception as error:
+        print("NFA metadata not written: %s" % error)
 
 # Cleanup after ourselves
 nuke.delete(group)

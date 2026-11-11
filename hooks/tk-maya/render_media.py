@@ -82,6 +82,7 @@ class RenderMedia(HookBaseClass):
             "Writing playblast to: %s using (%s)" % (render_file_path, playblast_args)
         )
 
+        self._nfa_export_camera_info()
         output_path = maya.cmds.playblast(**playblast_args)
         self.logger.debug("Playblast maybe written to %s" % output_path)
 
@@ -124,6 +125,21 @@ class RenderMedia(HookBaseClass):
         raise RuntimeError(
             "Something went wrong with the playblast. Unable to find it on disk."
         )
+
+    def _nfa_export_camera_info(self):
+        """NFA: hand the playblast camera's settings to the slate render (slate.py), which stores
+        them in the movie. Environment variables, because the slate runs as a separate Nuke."""
+        for key in ("CAMERA", "OVERSCAN", "FILM_FIT", "FOCAL_LENGTH"):
+            os.environ.pop("NFA_REVIEW_%s" % key, None)
+        try:
+            panel = maya.cmds.playblast(activeEditor=True)
+            camera = maya.cmds.modelEditor(panel, query=True, camera=True)
+            os.environ["NFA_REVIEW_CAMERA"] = str(camera)
+            os.environ["NFA_REVIEW_OVERSCAN"] = str(maya.cmds.getAttr(camera + ".overscan"))
+            os.environ["NFA_REVIEW_FILM_FIT"] = str(maya.cmds.getAttr(camera + ".filmFit"))
+            os.environ["NFA_REVIEW_FOCAL_LENGTH"] = str(maya.cmds.getAttr(camera + ".focalLength"))
+        except Exception as error:
+            self.logger.debug("NFA metadata: camera info not available (%s)" % error)
 
     def get_default_playblastlast_args(
             self,
