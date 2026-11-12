@@ -32,6 +32,7 @@ except ModuleNotFoundError:
     from PySide6 import QtGui, QtWidgets
     from PySide6.QtWidgets import QMessageBox
 
+from . import resolution as resolution_lookup
 from .create_slate import CreateSlate
 from .preview_dialog import MovieJob, PreviewDialog, SavePromptDialog
 from .submit_version import SubmitVersion
@@ -193,7 +194,13 @@ class ReviewDialog(QtWidgets.QDialog):
         resolution_group_layout = QtWidgets.QHBoxLayout()
         resolution_group_layout.addWidget(self.resolution_x)
         resolution_group_layout.addWidget(self.resolution_y)
-        self.resolution_group.setLayout(resolution_group_layout)
+        self.resolution_source = QtWidgets.QLabel("")
+        self.resolution_source.setStyleSheet("color: #8b8f98;")
+        self.resolution_source.setWordWrap(True)
+        resolution_outer = QtWidgets.QVBoxLayout()
+        resolution_outer.addLayout(resolution_group_layout)
+        resolution_outer.addWidget(self.resolution_source)
+        self.resolution_group.setLayout(resolution_outer)
 
         #
         # --- OPTIONS ---
@@ -210,12 +217,12 @@ class ReviewDialog(QtWidgets.QDialog):
         elif self.current_engine.name == "tk-maya":
             import maya
 
-            self.resolution_x_line.setValue(
-                maya.cmds.getAttr("defaultResolution.width")
-            )
-            self.resolution_y_line.setValue(
-                maya.cmds.getAttr("defaultResolution.height")
-            )
+            found = self.__default_resolution(maya.cmds)
+            self.resolution_x.default, self.resolution_y.default = found.width, found.height
+            self.resolution_x_line.setValue(found.width)
+            self.resolution_y_line.setValue(found.height)
+            self.resolution_source.setText("From %s" % found.source)
+            self.logger.debug("Default resolution %s" % found)
 
 
             audio_nodes = maya.cmds.ls(type="audio")
@@ -575,6 +582,20 @@ class ReviewDialog(QtWidgets.QDialog):
         self.logger.debug("Setting fps to %s" % fps)
 
         return fps
+
+    def __default_resolution(self, cmds):
+        """Backplate in the scene > plate on disk > 1920x1080."""
+        root = seq = shot = None
+        try:
+            roots = getattr(self.app.sgtk, "roots", None) or {}
+            root = roots.get("primary") or next(iter(roots.values()), None)
+            if self.entity and self.entity.get("type") == "Shot":
+                data = self.sg.find_one("Shot", [["id", "is", self.entity["id"]]], ["code", "sg_sequence"]) or {}
+                shot = data.get("code")
+                seq = (data.get("sg_sequence") or {}).get("name")
+        except Exception as error:
+            self.logger.debug("Could not read the shot for the resolution lookup: %s" % error)
+        return resolution_lookup.find(cmds=cmds, root=root, seq=seq, shot=shot, logger=self.logger)
 
     def validate_resolution(self):
         """Format the resolution"""
