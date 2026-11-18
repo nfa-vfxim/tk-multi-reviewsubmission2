@@ -79,8 +79,12 @@ class SubmitVersion(object):
             tk = sgtk.sgtk_from_path(hou.hipFile.path())
             fx_id = hou.contextOption("fx_id")
             if not fx_id:
-                self.app.logger.warning("No fx_id context option set, no Version created")
-                return False
+                # Context Manager was not run in this session: fall back to the
+                # Toolkit context instead of failing the submit.
+                self.app.logger.warning(
+                    "No fx_id context option set, creating the Version on the Toolkit context"
+                )
+                fx_id = "No fx task"
             if fx_id != "No fx task":
                 new_context = tk.context_from_entity("Task", int(fx_id))
                 data = {
